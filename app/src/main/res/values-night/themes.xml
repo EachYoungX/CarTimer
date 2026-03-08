@@ -1,16 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Theme.Timer" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
-        <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/purple_200</item>
-        <item name="colorPrimaryVariant">@color/purple_700</item>
-        <item name="colorOnPrimary">@color/black</item>
+    <!-- ==================== 深色模式语义化主题样式定义 ==================== -->
+    
+    <!-- ========== 基础主题 (经典蓝 - 深色模式) ========== -->
+    <style name="Base.Theme.CarTimer.Dark" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary brand color (保持不变). -->
+        <item name="colorPrimary">@color/theme_blue_primary</item>
+        <item name="colorPrimaryVariant">@color/theme_blue_primary_variant</item>
+        <item name="colorOnPrimary">@color/theme_blue_on_primary</item>
         <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/teal_200</item>
-        <item name="colorSecondaryVariant">@color/teal_200</item>
-        <item name="colorOnSecondary">@color/black</item>
+        <item name="colorSecondary">@color/theme_blue_secondary</item>
+        <item name="colorSecondaryVariant">@color/theme_blue_primary_variant</item>
+        <item name="colorOnSecondary">@color/theme_blue_on_secondary</item>
+        <!-- Background color (强制深色). -->
+        <item name="android:colorBackground">@color/theme_blue_background</item>
+        <item name="colorOnBackground">@color/theme_blue_on_surface</item>
+        <!-- Surface color (强制深色). -->
+        <item name="colorSurface">@color/theme_blue_surface</item>
+        <item name="colorSurfaceVariant">@color/theme_blue_surface_variant</item>
+        <item name="colorOnSurface">@color/theme_blue_on_surface</item>
+        <item name="colorOnSurfaceVariant">@color/theme_blue_on_surface_variant</item>
+        <!-- Outline color. -->
+        <item name="colorOutline">@color/theme_blue_outline</item>
+        <!-- Error color. -->
+        <item name="colorError">@color/color_error</item>
+        <item name="colorOnError">@color/color_on_error</item>
         <!-- Status bar color. -->
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
     </style>
+    
+    <!-- ========== 经典蓝主题 - 深色模式 ========== -->
+    <style name="Theme.CarTimer.Blue" parent="Base.Theme.CarTimer.Dark" />
+    
+    <!-- ========== 活力橙主题 - 深色模式 ========== -->
+    <style name="Theme.CarTimer.Orange" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary brand color (保持不变). -->
+        <item name="colorPrimary">@color/theme_orange_primary</item>
+        <item name="colorPrimaryVariant">@color/theme_orange_primary_variant</item>
+        <item name="colorOnPrimary">@color/theme_orange_on_primary</item>
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">@color/theme_orange_secondary</item>
+        <item name="colorSecondaryVariant">@color/theme_orange_primary_variant</item>
+        <item name="colorOnSecondary">@color/theme_orange_on_secondary</item>
+        <!-- Background color (强制深色). -->
+        <item name="android:colorBackground">@color/theme_orange_background</item>
+        <item name="colorOnBackground">@color/theme_orange_on_surface</item>
+        <!-- Surface color (强制深色). -->
+        <item name="colorSurface">@color/theme_orange_surface</item>
+        <item name="colorSurfaceVariant">@color/theme_orange_surface_variant</item>
+        <item name="colorOnSurface">@color/theme_orange_on_surface</item>
+        <item name="colorOnSurfaceVariant">@color/theme_orange_on_surface_variant</item>
+        <!-- Outline color. -->
+        <item name="colorOutline">@color/theme_orange_outline</item>
+        <!-- Error color. -->
+        <item name="colorError">@color/color_error</item>
+        <item name="colorOnError">@color/color_on_error</item>
+        <!-- Status bar color. -->
+        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+    </style>
+    
+    <!-- ========== 极简灰主题 - 深色模式 ========== -->
+    <style name="Theme.CarTimer.White" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary brand color (保持不变). -->
+        <item name="colorPrimary">@color/theme_white_primary</item>
+        <item name="colorPrimaryVariant">@color/theme_white_primary_variant</item>
+        <item name="colorOnPrimary">@color/theme_white_on_primary</item>
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">@color/theme_white_secondary</item>
+        <item name="colorSecondaryVariant">@color/theme_white_primary_variant</item>
+        <item name="colorOnSecondary">@color/theme_white_on_secondary</item>
+        <!-- Background color (强制深色). -->
+        <item name="android:colorBackground">@color/theme_white_background</item>
+        <item name="colorOnBackground">@color/theme_white_on_surface</item>
+        <!-- Surface color (强制深色). -->
+        <item name="colorSurface">@color/theme_white_surface</item>
+        <item name="colorSurfaceVariant">@color/theme_white_surface_variant</item>
+        <item name="colorOnSurface">@color/theme_white_on_surface</item>
+        <item name="colorOnSurfaceVariant">@color/theme_white_on_surface_variant</item>
+        <!-- Outline color. -->
+        <item name="colorOutline">@color/theme_white_outline</item>
+        <!-- Error color. -->
+        <item name="colorError">@color/color_error</item>
+        <item name="colorOnError">@color/color_on_error</item>
+        <!-- Status bar color. -->
+        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+    </style>
+    
+    <!-- ========== 深邃紫主题 - 深色模式 (始终深色) ========== -->
+    <style name="Theme.CarTimer.Black" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">@color/theme_black_primary</item>
+        <item name="colorPrimaryVariant">@color/theme_black_primary_variant</item>
+        <item name="colorOnPrimary">@color/theme_black_on_primary</item>
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">@color/theme_black_secondary</item>
+        <item name="colorSecondaryVariant">@color/theme_black_primary_variant</item>
+        <item name="colorOnSecondary">@color/theme_black_on_secondary</item>
+        <!-- Background color (全黑风格). -->
+        <item name="android:colorBackground">@color/theme_black_background</item>
+        <item name="colorOnBackground">@color/theme_black_on_surface</item>
+        <!-- Surface color (全黑风格). -->
+        <item name="colorSurface">@color/theme_black_surface</item>
+        <item name="colorSurfaceVariant">@color/theme_black_surface_variant</item>
+        <item name="colorOnSurface">@color/theme_black_on_surface</item>
+        <item name="colorOnSurfaceVariant">@color/theme_black_on_surface_variant</item>
+        <!-- Outline color. -->
+        <item name="colorOutline">@color/theme_black_outline</item>
+        <!-- Error color. -->
+        <item name="colorError">@color/color_error</item>
+        <item name="colorOnError">@color/color_on_error</item>
+        <!-- Status bar color. -->
+        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+    </style>
+    
+    <!-- ========== 默认主题 (经典蓝 - 深色模式) ========== -->
+    <style name="Theme.CarTimer" parent="Theme.CarTimer.Blue" />
 </resources>

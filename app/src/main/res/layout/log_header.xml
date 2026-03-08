@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="?attr/colorSurfaceVariant">
+
+    <TextView
+        android:id="@+id/tv_header_date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="?attr/colorOnSurface"
+        tools:text="2026 年 3 月 5 日" />
+
+    <TextView
+        android:id="@+id/tv_header_total"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:layout_marginTop="4dp"
+        tools:text="当日总计：00:07" />
+
+    <ImageButton
+        android:id="@+id/btn_expand"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="end"
+        android:layout_marginTop="4dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_arrow_down"
+        android:contentDescription="展开/收起" />
+
+</LinearLayout>

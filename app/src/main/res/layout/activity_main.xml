@@ -1,83 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:padding="16dp">
+    android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/autoStartHint"
-        android:layout_width="wrap_content"
+    <FrameLayout
+        android:id="@+id/fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/bottom_navigation" />
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="16dp"
-        android:text="请确保已开启自启动权限"
-        android:textColor="#FF0000"/>
-
-    <Button
-        android:id="@+id/settingsButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/autoStartHint"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="8dp"
-        android:text="前往设置"/>
-
-    <CheckBox
-        android:id="@+id/autoStartTimerCheckBox"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/settingsButton"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="8dp"
-        android:text="启动软件自动开始计时"/>
-
-    <TextView
-        android:id="@+id/timerTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="100dp"
-        android:textSize="48sp"
-        android:text="00:00:00" />
-
-    <LinearLayout
-        android:id="@+id/buttonContainer"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/timerTextView"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="32dp"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/startButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:text="开始" />
-
-        <Button
-            android:id="@+id/pauseButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:text="暂停" />
-
-        <Button
-            android:id="@+id/stopButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="结束" />
-    </LinearLayout>
-
-    <Button
-        android:id="@+id/minimizeButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/buttonContainer"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="16dp"
-        android:text="最小化到悬浮窗" />
+        android:layout_alignParentBottom="true"
+        android:background="?attr/colorPrimary"
+        app:menu="@menu/bottom_nav_menu"
+        app:itemTextColor="?attr/colorOnPrimary"
+        app:itemIconTint="?attr/colorOnPrimary" />
 
 </RelativeLayout>

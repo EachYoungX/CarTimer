@@ -1,5 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Default screen margins, per the Android Design guidelines. -->
-    <dimen name="activity_horizontal_margin">16dp</dimen>
-    <dimen name="activity_vertical_margin">16dp</dimen>
+    <!-- 日历单元格尺寸（85% 大小，约 41dp） -->
+    <dimen name="calendar_cell_size">41dp</dimen>
+    
+    <!-- 日历间距 -->
+    <dimen name="calendar_cell_margin">4dp</dimen>
+    
+    <!-- 字体大小 -->
+    <dimen name="calendar_text_size">14sp</dimen>
 </resources>

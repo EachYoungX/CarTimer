@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="⚠️ 此操作将永久删除所有行驶记录，无法恢复！"
+        android:textSize="15sp"
+        android:textColor="?attr/colorError"
+        android:textStyle="bold"
+        android:lineSpacingExtra="4dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="请点击下方确定按钮确认操作"
+        android:textSize="14sp"
+        android:textColor="?attr/colorOnSurface" />
+
+</LinearLayout>

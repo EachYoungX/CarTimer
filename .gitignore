@@ -1,15 +1,107 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
+# ===========================
+# 构建产物 (Build Artifacts)
+# ===========================
 /build
-/captures
-.externalNativeBuild
-.cxx
+/app/build
+/app/release
+*/build
+captures/
+*.apk
+*.ap_
+*.aab
+
+# ===========================
+# Gradle
+# ===========================
+.gradle/
+gradle-app.setting
+!gradle/wrapper/gradle-wrapper.jar
+!gradlew
+!gradlew.bat
+
+# ===========================
+# IDE 文件 (IntelliJ IDEA / Android Studio)
+# ===========================
+*.iml
+.idea/
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/misc.xml
+.idea/vcs.xml
+.idea/deviceManager.xml
+.idea/deploymentTargetSelector.xml
+.idea/compiler.xml
+.idea/gradle.xml
+.idea/migrations.xml
+.idea/runConfigurations.xml
+.idea/AndroidProjectSystem.xml
+!/.idea/codeStyles/
+!/.idea/codeStyles/Project.xml
+!/.idea/codeStyles/codeStyleConfig.xml
+
+# ===========================
+# 本地配置文件 (Local Configuration)
+# ===========================
 local.properties
+*/local.properties
+
+# ===========================
+# 外部原生构建 (External Native Build)
+# ===========================
+.externalNativeBuild
+.cxx/
+
+# ===========================
+# 系统文件 (System Files)
+# ===========================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# ===========================
+# 日志文件 (Log Files)
+# ===========================
+*.log
+logs/
+
+# ===========================
+# 临时文件 (Temporary Files)
+# ===========================
+*.tmp
+*.temp
+*.bak
+
+# ===========================
+# 密钥和敏感信息 (Keys and Secrets)
+# ===========================
+*.jks
+*.keystore
+keystore.properties
+secrets/
+*.pem
+*.key
+
+# ===========================
+# ProGuard/R8
+# ===========================
+proguard/
+*/proguard/
+
+# ===========================
+# 测试覆盖率报告 (Test Coverage)
+# ===========================
+coverage/
+*.ec
+*.exec
+
+# ===========================
+# 其他 (Others)
+# ===========================
+.hg/
+.svn/

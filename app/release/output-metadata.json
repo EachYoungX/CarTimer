@@ -4,7 +4,7 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "com.yueqi.timer",
+  "applicationId": "com.EachYoungX.timer",
   "variantName": "release",
   "elements": [
     {
@@ -12,7 +12,7 @@
       "filters": [],
       "attributes": [],
       "versionCode": 2,
-      "versionName": "1.1",
+      "versionName": "2.0.0",
       "outputFile": "app-release.apk"
     }
   ],

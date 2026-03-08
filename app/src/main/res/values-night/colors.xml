@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ==================== 深色模式语义化颜色定义 ==================== -->
+    <!-- 注意：深色模式下，所有主题都使用深色背景，但主色调保持不变 -->
+    
+    <!-- ========== 1. 经典蓝主题 - 深色模式 ========== -->
+    <color name="theme_blue_primary">#89AFE0</color>
+    <color name="theme_blue_primary_variant">#5C8FC7</color>
+    <color name="theme_blue_primary_light">#B8D4F5</color>
+    <color name="theme_blue_on_primary">#000000</color>
+    <color name="theme_blue_secondary">#4DB6AC</color>
+    <color name="theme_blue_on_secondary">#000000</color>
+    
+    <!-- 深色模式背景 -->
+    <color name="theme_blue_background">#121212</color>
+    <color name="theme_blue_surface">#1E1E1E</color>
+    <color name="theme_blue_surface_variant">#2C2C2C</color>
+    <color name="theme_blue_on_surface">#E6E1E5</color>
+    <color name="theme_blue_on_surface_variant">#C4C7CF</color>
+    <color name="theme_blue_outline">#424242</color>
+    
+    <!-- ========== 2. 活力橙主题 - 深色模式 ========== -->
+    <color name="theme_orange_primary">#FF9800</color>
+    <color name="theme_orange_primary_variant">#F57C00</color>
+    <color name="theme_orange_on_primary">#000000</color>
+    <color name="theme_orange_secondary">#FFCC80</color>
+    <color name="theme_orange_on_secondary">#000000</color>
+    
+    <!-- 深色模式背景 -->
+    <color name="theme_orange_background">#121212</color>
+    <color name="theme_orange_surface">#1E1E1E</color>
+    <color name="theme_orange_surface_variant">#2C2C2C</color>
+    <color name="theme_orange_on_surface">#E6E1E5</color>
+    <color name="theme_orange_on_surface_variant">#C4C7CF</color>
+    <color name="theme_orange_outline">#424242</color>
+    
+    <!-- ========== 3. 极简白主题 - 深色模式 ========== -->
+    <color name="theme_white_primary">#607D8B</color>
+    <color name="theme_white_primary_variant">#455A64</color>
+    <color name="theme_white_on_primary">#FFFFFF</color>
+    <color name="theme_white_secondary">#B0BEC5</color>
+    <color name="theme_white_on_secondary">#000000</color>
+    
+    <!-- 深色模式背景 -->
+    <color name="theme_white_background">#121212</color>
+    <color name="theme_white_surface">#1E1E1E</color>
+    <color name="theme_white_surface_variant">#2C2C2C</color>
+    <color name="theme_white_on_surface">#E6E1E5</color>
+    <color name="theme_white_on_surface_variant">#C4C7CF</color>
+    <color name="theme_white_outline">#424242</color>
+    
+    <!-- ========== 4. 深邃紫主题 - 深色模式 ========== -->
+    <color name="theme_black_primary">#BB86FC</color>
+    <color name="theme_black_primary_variant">#9959E8</color>
+    <color name="theme_black_on_primary">#000000</color>
+    <color name="theme_black_secondary">#03DAC6</color>
+    <color name="theme_black_on_secondary">#000000</color>
+    
+    <!-- 深色模式背景 -->
+    <color name="theme_black_background">#121212</color>
+    <color name="theme_black_surface">#1E1E1E</color>
+    <color name="theme_black_surface_variant">#2C2C2C</color>
+    <color name="theme_black_on_surface">#E6E1E5</color>
+    <color name="theme_black_on_surface_variant">#C4C7CF</color>
+    <color name="theme_black_outline">#424242</color>
+    
+    <!-- Footer 相关颜色（深色模式） -->
+    <color name="footer_background">#1E1E1E</color>
+    <color name="divider_line">#424242</color>
+    <color name="footer_text">#9E9E9E</color>
+    
+    <!-- ========== 通用颜色（深色模式） ========== -->
+    <color name="color_error">#CF6679</color>
+    <color name="color_on_error">#000000</color>
+    <color name="divider_light">#2C2C2C</color>
+    <color name="divider_dark">#2C2C2C</color>
+    
+    <!-- ========== 图表颜色（深色模式） ========== -->
+    <!-- 经典蓝主题图表颜色（深色模式） -->
+    <color name="chart_blue_theme">#5C8FC7</color>
+    <color name="chart_blue_theme_highlight">#3F6A9E</color>
+    <color name="chart_blue_theme_text">#C4C7CF</color>
+    <color name="chart_blue_theme_grid">#2C2C2C</color>
+    <color name="chart_blue_theme_axis">#424242</color>
+    
+    <!-- 活力橙主题图表颜色（深色模式） -->
+    <color name="chart_orange_theme">#FF9800</color>
+    <color name="chart_orange_theme_highlight">#F57C00</color>
+    <color name="chart_orange_theme_text">#C4C7CF</color>
+    <color name="chart_orange_theme_grid">#2C2C2C</color>
+    <color name="chart_orange_theme_axis">#424242</color>
+    
+    <!-- 极简灰主题颜色（保持与亮色模式一致，不随深色模式变化） -->
+    <color name="chart_white_theme">#5A6266</color>
+    <color name="chart_white_theme_highlight">#343738</color>
+    <color name="chart_white_theme_text">#44474F</color>
+    <color name="chart_white_theme_grid">#2C2C2C</color>
+    <color name="chart_white_theme_axis">#424242</color>
+    
+    <!-- 深邃紫主题图表颜色（深色模式） -->
+    <color name="chart_black_theme">#BB86FC</color>
+    <color name="chart_black_theme_highlight">#9959E8</color>
+    <color name="chart_black_theme_text">#C4C7CF</color>
+    <color name="chart_black_theme_grid">#2C2C2C</color>
+    <color name="chart_black_theme_axis">#424242</color>
+</resources>

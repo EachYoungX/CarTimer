@@ -1,28 +1,343 @@
-# 安卓车载自动计时软件 CarTimer
-## 基本功能:
-1. 初始设置界面
-2. 开机自启
-3. 自动悬浮窗
-4. 手动开始,暂停,继续
-## 特点
-- 自动记忆设置,无需反复设置
-- 设置后开机自启悬浮窗并启动计时,无需任何多余操作
-- 不联网,无多余权限
-## 待完善
-- 本地记录存储查看功能
-***
-# CarTimer: An Android In-Vehicle Automatic Timer Application
+# CarTimer - 车载自动计时器
 
-## Basic Features:
-1. Initial Setup Interface
-2. Auto-Start on Boot
-3. Automatic Floating Window
-4. Manual Start, Pause, and Resume
+<div align="center">
 
-## Features
-- Automatically Saves Settings, No Need for Repeated Configuration
-- After Setup, the Floating Window Auto-Starts and Begins Timing on Boot, Without Any Extra Operations
-- Offline Operation, No Unnecessary Permissions
+[🇨🇳 中文](README.md) | [🇺🇸 English](README_en.md)
 
-## To Be Improved
-- Local Record Storage and Viewing Function
+</div>
+
+**专为 Android 车载系统设计的自动计时和行车记录管理工具**
+
+[功能特性](#功能特性) | [核心功能](#核心功能) | [技术架构](#技术架构) | [更新日志](#更新日志)
+
+---
+
+## 应用简介
+
+CarTimer 是一款专为车载中控系统优化的自动计时应用，提供行车记录、统计分析和数据管理能力。采用 Material Design 3 设计语言，横屏优化，支持深色模式、系统主题跟随和多种主题色选择，为驾驶者提供安全、便捷、优雅的使用体验。
+
+---
+
+## 功能特性
+
+### 核心功能
+
+#### 1. 自动计时服务
+
+- 开机自动启动，无需手动干预
+- 悬浮窗实时显示计时器
+- 支持手动开始/暂停/继续控制
+- 后台持续运行，锁屏不中断
+- 通知栏常驻显示（可选）
+
+#### 2. 行车记录管理
+
+- 自动记录每次行程的开始时间、结束时间和时长
+- 支持按日/周/月/自定义范围查看记录
+- 智能折叠显示（横屏默认显示前 3 条记录）
+- 快速定位功能（日历跳转）
+- 底部边界标识，防止无限滚动
+- 展开/收起动画流畅
+
+#### 3. 统计分析
+
+- **总览**：所有历史数据汇总
+- **月趋势**：柱状图展示每月行车规律
+- **周分布**：分析每周驾驶习惯
+- **自定义范围**：灵活选择时间段统计
+- 动态底部布局，自动适应内容高度
+- 图表颜色随主题变化
+
+#### 4. 数据与隐私管理
+
+- **导出功能**：导出所有记录为标准 CSV 格式（UTF-8 with BOM，兼容 Excel）
+- **导入功能**：从 CSV 文件恢复记录，自动去重和事务保护
+- **自动清理**：可配置自动删除过期记录（1/2/3 年可选）
+- **手动删除**：支持按年/月/周选择删除，二次确认和 3 秒倒计时防误触
+
+#### 5. 个性化设置
+
+- **4 种主题色**：经典蓝、活力橙、极简灰、深邃紫
+- **系统跟随**：支持跟随系统深色模式
+- **行为设置**：开机自启、自动计时、自动最小化
+- 所有设置实时保存，无需重复配置
+
+---
+
+### 车载优化
+
+#### 横屏适配
+
+- 所有页面强制横屏显示
+- 横屏模式下自动调整布局（如今日页面显示 3 条记录）
+- 屏幕旋转时自动适配（配置变更监听）
+- **计划支持竖屏**：未来版本将适配竖屏使用场景
+
+#### 触控优化
+
+- 最小触控高度 64dp，防止误触
+- 大卡片设计，16dp 间距
+- 大字体（主标题 18sp 加粗）
+- 按钮和可点击区域明显标识
+
+#### 视觉优化
+
+- Material Design 3 设计规范
+- 统一的色彩系统和圆角风格
+- 深色模式完全适配
+- 状态栏颜色随主题变化
+- 加载状态和空状态清晰提示
+
+#### 性能优化
+
+- 异步数据加载，不阻塞 UI
+- RecyclerView 智能复用
+- 配置变更不重建 Activity
+- 数据库操作使用事务
+- 后台服务优先级优化
+
+---
+
+## 技术架构
+
+### 应用结构
+
+```
+com.EachYoungX.timer/
+├── activities/          # Activity 层
+│   ├── MainActivity
+│   ├── LogDetailActivity
+│   ├── SettingsActivity
+│   ├── DataPrivacyActivity
+│   └── ManualDeleteActivity
+│
+├── fragments/           # Fragment 层
+│   ├── HomeFragment
+│   ├── LogFragment
+│   ├── StatisticsFragment
+│   ├── MonthlyTrendFragment
+│   ├── WeeklyDistributionFragment
+│   ├── MonthlyDeleteFragment
+│   └── WeeklyDeleteFragment
+│
+├── services/            # 服务层
+│   ├── TimerService          # 计时服务
+│   └── FloatingWindowService # 悬浮窗服务
+│
+├── adapters/            # 适配器层
+│   ├── LogAdapter
+│   └── ManualDeletePagerAdapter
+│
+├── models/              # 数据模型
+│   └── LogEntry
+│
+├── database/            # 数据库层
+│   └── LogDatabaseHelper
+│
+├── ui/                  # UI 组件
+│   ├── ThemeManager
+│   └── MonthCalendarView
+│
+└── utils/               # 工具类
+    ├── DateUtils
+    └── ChartColorHelper
+```
+
+### 核心技术栈
+
+- **开发语言**：Java 8+
+- **最低版本**：Android 7.0 (API 24)
+- **目标版本**：Android 13 (API 33)
+- **UI 框架**：Material Components
+- **数据存储**：SQLite + SharedPreferences
+- **架构模式**：MVC + Service 架构
+
+### 关键设计
+
+#### 1. 前台服务架构
+
+- `TimerService` 使用 `startForeground()` 保持前台运行
+- 声明 `foregroundServiceType="specialUse"` 符合 Android 10+ 要求
+- 客户端计数机制（`activeClients`）管理服务生命周期
+- 自毁机制（2 秒无客户端则停止）避免资源浪费
+
+#### 2. 数据库设计
+
+- 单表设计（`logs` 表）
+- 索引优化（`start_time`、`date_key`、`month_key`）
+- 事务保护（导入/删除操作）
+- 去重逻辑（基于 `start_time`）
+
+#### 3. 主题系统
+
+- `ThemeManager` 单例管理全局主题
+- 支持 4 种主题色 + 系统跟随
+- 深色模式完全适配
+- 实时切换无需重启应用
+
+#### 4. 自适应布局
+
+- 横屏/竖屏自动适配
+- `configChanges` 避免 Activity 重建
+- `layout_weight` 动态分配空间
+- 自定义 View 支持配置变更
+
+---
+
+## 主要亮点
+
+### 1. 安全驾驶优先
+
+- 大字体、大按钮，驾驶时易操作
+- 横屏优化，适配车载中控屏幕
+- 深色模式减少夜间眩光
+- 防误触设计（3 秒倒计时、大间距）
+
+### 2. 数据安全保障
+
+- 本地存储，无需网络权限
+- CSV 标准格式，数据可迁移
+- 事务保护，防止数据损坏
+- 自动去重，避免重复记录
+
+### 3. 性能卓越
+
+- 开机自启，无需手动启动
+- 后台持续运行，锁屏不中断
+- 异步处理，UI 流畅不卡顿
+- 智能折叠，减少内存占用
+
+### 4. 用户体验优秀
+
+- Material Design 3 设计规范
+- 4 种主题色可选
+- 系统深色模式跟随
+- 设置实时保存
+
+---
+
+## 安装说明
+
+### 系统要求
+
+- Android 7.0 (API 24) 及以上版本
+- 建议 Android 10+ 以获得完整功能支持
+- 横屏显示设备（车载中控）
+
+### 安装步骤
+
+1. 进入github发布页面
+1. 下载 Latest APK 文件
+1. 允许"安装未知应用"权限
+1. 点击安装
+1. 授予必要权限（通知、悬浮窗、开机自启）
+
+### 权限说明
+
+- **通知权限**：用于前台服务通知栏显示
+- **悬浮窗权限**：用于悬浮窗显示计时器
+- **开机自启**：用于开机自动启动计时服务
+- **存储权限**：用于导入/导出 CSV 文件（可选）
+
+---
+
+## 使用指南
+
+### 快速开始
+
+1. **首次启动**：应用所有快捷设计均为默认关闭状态，需要在设置中选择
+2. **查看记录**：点击底部导航栏"日志"标签
+3. **查看统计**：点击"统计"标签查看分析图表
+4. **设置**：点击"设置"标签自定义行为
+
+### 常用操作
+
+- **开始计时**：点击主页"开始"按钮（或自动启动）
+- **暂停计时**：点击主页"暂停"按钮
+- **继续计时**：点击主页"继续"按钮
+- **最小化**：点击主页"最小化"按钮进入悬浮窗模式
+- **展开记录**：点击日期 Header 或"展开更多"按钮
+- **导出数据**：设置 > 数据与隐私 > 导出记录
+
+---
+
+## 更新日志
+
+详细更新记录请查看 [CHANGELOG.md](CHANGELOG.md)
+
+---
+
+## 预期计划
+
+### 即将推出
+
+1. **竖屏适配**
+   - 支持竖屏/横屏自由切换
+   - 竖屏模式下的优化布局
+
+2. **多语言支持**
+   - 国际化（i18n）框架
+   - 首批支持：简体中文、English
+   - 自动根据系统语言切换
+
+---
+
+## 技术说明
+
+### 前台服务类型
+
+本应用使用 `foregroundServiceType="specialUse"`，用于：
+
+- 用户可见的计时器显示
+- 悬浮窗显示
+
+符合 Android 10+ 的前台服务要求。
+
+### 数据存储
+
+- **记录数据**：SQLite 数据库（`logs` 表）
+- **设置数据**：SharedPreferences
+- **导出文件**：CSV 格式（UTF-8 with BOM）
+
+### 兼容性说明
+
+- **Android 7.0-9.0**：基础功能完整支持
+- **Android 10+**：完整支持，包括前台服务类型声明
+- **Android 12+**：适配新的通知权限要求
+- **Android 13+**：适配新的通知权限和语言设置
+
+### 国际化
+
+- **当前语言**：简体中文
+- **计划支持**：多语言支持（i18n）将在未来版本实现
+
+---
+
+## 开发者信息
+
+- **包名**：`com.EachYoungX.timer`
+- **应用名称**：CarTimer
+- **版本**：2.0.0
+- **构建工具**：Gradle 8.0+
+
+---
+
+## 开源协议
+
+本项目仅供学习和参考使用。
+
+---
+
+## 反馈与支持
+
+如有问题或建议，欢迎反馈。
+
+---
+
+<div align="center">
+
+**CarTimer** - 专为车载系统设计的自动计时工具
+
+Made with care for Android In-Vehicle Systems
+
+</div>
