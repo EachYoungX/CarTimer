@@ -75,9 +75,9 @@ CarTimer is an automatic timing application optimized for in-vehicle central con
 
 #### Touch Optimization
 
-- Minimum touch height of 64dp to prevent accidental touches
-- Large card design with 16dp spacing
-- Large fonts (main title 18sp bold)
+- Adjust the minimum touch height to prevent accidental touch
+- Large card design
+- Large fonts
 - Clearly identified buttons and clickable areas
 
 #### Visual Optimization
