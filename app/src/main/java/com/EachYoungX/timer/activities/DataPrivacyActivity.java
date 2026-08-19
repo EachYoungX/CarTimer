@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -218,6 +219,7 @@ public class DataPrivacyActivity extends AppCompatActivity {
                 if (size <= 0) {
                     throw new IOException("备份文件为空");
                 }
+                verifyCsvBackup(uri, fallbackFile, count);
 
                 String location = fallbackFile != null
                         ? "应用专用目录（可在应用内恢复）"
@@ -231,6 +233,33 @@ public class DataPrivacyActivity extends AppCompatActivity {
                 runOnUiThread(() -> showStatus(message));
             }
         }).start();
+    }
+
+    private void verifyCsvBackup(Uri uri, File fallbackFile, int expectedCount) throws IOException {
+        InputStream input = fallbackFile != null
+                ? new java.io.FileInputStream(fallbackFile)
+                : getContentResolver().openInputStream(uri);
+        if (input == null) {
+            throw new IOException("无法重新打开备份文件");
+        }
+
+        int actualCount = 0;
+        try (InputStream stream = input;
+                BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+            String header = reader.readLine();
+            if (header != null && header.length() > 0 && header.charAt(0) == '\ufeff') {
+                header = header.substring(1);
+            }
+            if (!"date_key,start_time,end_time,duration,week_key,month_key".equals(header)) {
+                throw new IOException("CSV Header 不匹配");
+            }
+            while (reader.readLine() != null) {
+                actualCount++;
+            }
+        }
+        if (actualCount != expectedCount) {
+            throw new IOException("记录数不一致：数据库 " + expectedCount + "，文件 " + actualCount);
+        }
     }
 
     private String buildCsv(List<com.EachYoungX.timer.models.LogEntry> logs) {
