@@ -3,7 +3,7 @@
 
     <application
         android:theme="@style/AppTheme"
-        android:label="BYD API Probe"
+        android:label="BYD 接口测试"
         android:allowBackup="false"
         android:supportsRtl="true">
         <activity

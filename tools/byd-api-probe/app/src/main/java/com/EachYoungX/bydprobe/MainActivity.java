@@ -40,41 +40,41 @@ public class MainActivity extends Activity {
     private void readOnce() {
         readCount++;
         StringBuilder result = new StringBuilder();
-        result.append("Read count: ").append(readCount).append("\n");
-        result.append("Signature: NORMAL\n");
-        result.append("Firmware: 13.1.22.2409213.1\n\n");
+        result.append("读取次数：").append(readCount).append("\n");
+        result.append("应用签名：普通签名\n");
+        result.append("固件：13.1.22.2409213.1\n\n");
 
         int permission = checkSelfPermission(STATISTIC_PERMISSION);
-        result.append("Permission: ")
-                .append(permission == PackageManager.PERMISSION_GRANTED ? "GRANTED" : "DENIED")
+        result.append("权限 BYDAUTO_STATISTIC_GET：")
+                .append(permission == PackageManager.PERMISSION_GRANTED ? "已授权" : "未授权")
                 .append("\n");
 
         try {
             Class<?> deviceClass = Class.forName(DEVICE_CLASS);
-            result.append("Statistic class: FOUND\n");
+            result.append("统计接口类：已找到\n");
 
             Method getInstance = deviceClass.getMethod("getInstance", Context.class);
             Object device = getInstance.invoke(null, this);
             if (device == null) {
-                result.append("getInstance: NULL\n");
+                result.append("getInstance：返回空\n");
                 resultText.setText(result);
                 return;
             }
-            result.append("getInstance: OK\n");
+            result.append("getInstance：成功\n");
 
             Method getMileage = deviceClass.getMethod("getTotalMileageValue");
             Object rawValue = getMileage.invoke(device);
-            result.append("getTotalMileageValue: OK\n")
-                    .append("Raw value: ").append(String.valueOf(rawValue)).append("\n")
-                    .append("Unit: UNCONFIRMED\n");
+            result.append("getTotalMileageValue：成功\n")
+                    .append("原始里程值：").append(String.valueOf(rawValue)).append("\n")
+                    .append("单位：未确认\n");
         } catch (ClassNotFoundException e) {
-            result.append("Statistic class: NOT_FOUND\n");
-            result.append("Last error: ").append(e.getClass().getSimpleName()).append("\n");
+            result.append("统计接口类：未找到\n");
+            result.append("最近错误：").append(e.getClass().getSimpleName()).append("\n");
         } catch (SecurityException e) {
-            result.append("Last error: SecurityException\n");
+            result.append("最近错误：SecurityException（权限拒绝）\n");
         } catch (Exception e) {
             Throwable cause = e.getCause() == null ? e : e.getCause();
-            result.append("Last error: ").append(cause.getClass().getSimpleName())
+            result.append("最近错误：").append(cause.getClass().getSimpleName())
                     .append(": ").append(String.valueOf(cause.getMessage())).append("\n");
         }
 

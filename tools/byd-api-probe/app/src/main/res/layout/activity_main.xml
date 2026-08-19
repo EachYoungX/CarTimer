@@ -11,7 +11,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="BYD API Probe"
+            android:text="BYD 接口测试"
             android:textSize="28sp"
             android:textStyle="bold" />
 
@@ -28,7 +28,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Read Once" />
+            android:text="读取一次" />
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -39,13 +39,13 @@
                 android:id="@+id/start_repeat_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Start Repeat Read" />
+                android:text="开始连续读取" />
 
             <Button
                 android:id="@+id/stop_repeat_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Stop"
+                android:text="停止"
                 android:layout_marginStart="12dp" />
         </LinearLayout>
     </LinearLayout>
