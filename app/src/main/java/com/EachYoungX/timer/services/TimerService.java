@@ -45,6 +45,7 @@ public class TimerService extends Service {
     public static final String ACTION_RESUME = "com.EachYoungX.timer.ACTION_RESUME";
     public static final String ACTION_GET_STATUS = "com.EachYoungX.timer.ACTION_GET_STATUS";
     public static final String EXTRA_IS_RUNNING = "is_running";
+    public static final String EXTRA_OVERRIDE_END_TIME = "OVERRIDE_END_TIME";
 
     // 状态持久化常量
     private static final String PREFS_NAME = "TimerState";
@@ -138,7 +139,7 @@ public class TimerService extends Service {
 
                     Intent stopIntent = new Intent(context, TimerService.class);
                     stopIntent.setAction(ACTION_STOP);
-                    stopIntent.putExtra("OVERRIDE_END_TIME", realDisconnectTime);
+                    stopIntent.putExtra(EXTRA_OVERRIDE_END_TIME, realDisconnectTime);
                     context.startService(stopIntent);
                 }
             };
@@ -323,7 +324,8 @@ public class TimerService extends Service {
                 pauseTimer();
                 break;
             case ACTION_STOP:
-                stopTimer(System.currentTimeMillis());
+                long overrideEndTime = intent.getLongExtra(EXTRA_OVERRIDE_END_TIME, 0L);
+                stopTimer(overrideEndTime);
                 stopForeground(true);
                 stopSelf();
                 break;
