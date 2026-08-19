@@ -12,7 +12,7 @@ import com.EachYoungX.timer.R;
  * 主题管理器单例类
  * 
  * 功能：
- * 1. 管理 4 种主色调（经典蓝、活力橙、极简灰、深邃紫）
+ * 1. 管理 4 种主色调（经典蓝、暖米白、极简灰、深邃紫）
  * 2. 支持深色模式适配
  * 3. 支持跟随系统昼夜变化
  * 4. 使用 SharedPreferences 持久化用户选择
@@ -28,7 +28,7 @@ public class ThemeManager {
     // 主题颜色枚举
     public enum ThemeColor {
         BLUE("blue"), // 经典蓝
-        ORANGE("orange"), // 活力橙
+        ORANGE("orange"), // 暖米白，保留原有 preference key
         WHITE("white"), // 极简灰
         BLACK("black"); // 深邃紫
 
@@ -238,7 +238,7 @@ public class ThemeManager {
             case BLUE:
                 return "经典蓝";
             case ORANGE:
-                return "活力橙";
+                return "暖米白";
             case WHITE:
                 return "极简灰";
             case BLACK:

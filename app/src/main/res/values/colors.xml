@@ -32,23 +32,23 @@
     <color name="divider_line">#BDBDBD</color>
     <color name="footer_text">#757575</color>
     
-    <!-- ========== 2. 活力橙主题 (Energetic Orange) ========== -->
+    <!-- ========== 2. 暖米白主题（保留 orange 内部 key） ========== -->
     <!-- 主色调 -->
-    <color name="theme_orange_primary">#FF9800</color>
-    <color name="theme_orange_primary_variant">#F57C00</color>
-    <color name="theme_orange_on_primary">#000000</color>
+    <color name="theme_orange_primary">#785F4C</color>
+    <color name="theme_orange_primary_variant">#6A5140</color>
+    <color name="theme_orange_on_primary">#FFF9F3</color>
     
     <!-- 辅助色 -->
-    <color name="theme_orange_secondary">#FFCC80</color>
-    <color name="theme_orange_on_secondary">#000000</color>
+    <color name="theme_orange_secondary">#FEDCBD</color>
+    <color name="theme_orange_on_secondary">#292622</color>
     
     <!-- 背景色（浅色模式） -->
-    <color name="theme_orange_background_light">#FFF8E1</color>
-    <color name="theme_orange_surface_light">#FFFFFF</color>
-    <color name="theme_orange_surface_variant_light">#FFF3E0</color>
-    <color name="theme_orange_on_surface_light">#1C1B1F</color>
-    <color name="theme_orange_on_surface_variant_light">#44474F</color>
-    <color name="theme_orange_outline_light">#E0E0E0</color>
+    <color name="theme_orange_background_light">#FFF9F3</color>
+    <color name="theme_orange_surface_light">#FFE6CE</color>
+    <color name="theme_orange_surface_variant_light">#F9E9CD</color>
+    <color name="theme_orange_on_surface_light">#292622</color>
+    <color name="theme_orange_on_surface_variant_light">#777069</color>
+    <color name="theme_orange_outline_light">#E8D6C4</color>
     
     <!-- 背景色（深色模式） -->
     <color name="theme_orange_background_dark">#121212</color>
