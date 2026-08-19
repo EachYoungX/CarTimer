@@ -63,26 +63,28 @@ public class LogDatabaseHelper extends SQLiteOpenHelper {
     }
 
     public void insertLog(long startTime, long endTime, long duration) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COLUMN_START_TIME, startTime);
-        values.put(COLUMN_END_TIME, endTime);
-        values.put(COLUMN_DURATION, duration);
+        synchronized (DatabaseIoLock.WRITE_LOCK) {
+            SQLiteDatabase db = this.getWritableDatabase();
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_START_TIME, startTime);
+            values.put(COLUMN_END_TIME, endTime);
+            values.put(COLUMN_DURATION, duration);
 
-        // 计算日期标识
-        String dateKey = getDateKey(startTime);
-        values.put(COLUMN_DATE_KEY, dateKey);
+            // 计算日期标识
+            String dateKey = getDateKey(startTime);
+            values.put(COLUMN_DATE_KEY, dateKey);
 
-        // 计算周标识
-        String weekKey = getWeekKey(startTime);
-        values.put(COLUMN_WEEK_KEY, weekKey);
+            // 计算周标识
+            String weekKey = getWeekKey(startTime);
+            values.put(COLUMN_WEEK_KEY, weekKey);
 
-        // 计算月份标识
-        String monthKey = getMonthKey(startTime);
-        values.put(COLUMN_MONTH_KEY, monthKey);
+            // 计算月份标识
+            String monthKey = getMonthKey(startTime);
+            values.put(COLUMN_MONTH_KEY, monthKey);
 
-        db.insert(TABLE_LOGS, null, values);
-        db.close();
+            db.insert(TABLE_LOGS, null, values);
+            db.close();
+        }
     }
 
     // 获取日期标识 (YYYY-MM-DD)

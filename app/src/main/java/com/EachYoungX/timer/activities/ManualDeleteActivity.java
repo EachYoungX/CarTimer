@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.EachYoungX.timer.database.LogDatabaseHelper;
+import com.EachYoungX.timer.database.DatabaseIoLock;
 import com.EachYoungX.timer.adapters.ManualDeletePagerAdapter;
 import com.EachYoungX.timer.R;
 import com.EachYoungX.timer.ui.ThemeManager;
@@ -196,27 +197,31 @@ public class ManualDeleteActivity extends AppCompatActivity {
     private void deleteSelectedRecords() {
         new Thread(() -> {
             LogDatabaseHelper dbHelper = new LogDatabaseHelper(this);
-            SQLiteDatabase db = dbHelper.getWritableDatabase();
-            db.beginTransaction();
+            synchronized (DatabaseIoLock.WRITE_LOCK) {
+                SQLiteDatabase db = dbHelper.getWritableDatabase();
+                db.beginTransaction();
 
-            try {
-                for (Long startTime : selectedRecords) {
-                    db.delete("logs", "start_time = ?", new String[] { String.valueOf(startTime) });
+                try {
+                    for (Long startTime : selectedRecords) {
+                        db.delete("logs", "start_time = ?", new String[] { String.valueOf(startTime) });
+                    }
+                    db.setTransactionSuccessful();
+                    db.endTransaction();
+                    db.close();
+
+                    runOnUiThread(() -> {
+                        Toast.makeText(this, "成功删除 " + selectedRecords.size() + " 条记录", Toast.LENGTH_SHORT).show();
+                        selectedRecords.clear();
+                        updateConfirmButton();
+                        refreshFragments();
+                        // 不 finish()，停留在删除页面，方便继续操作
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    db.endTransaction();
+                    db.close();
+                    runOnUiThread(() -> Toast.makeText(this, "删除失败：" + e.getMessage(), Toast.LENGTH_LONG).show());
                 }
-                db.setTransactionSuccessful();
-                db.endTransaction();
-                db.close();
-
-                runOnUiThread(() -> {
-                    Toast.makeText(this, "成功删除 " + selectedRecords.size() + " 条记录", Toast.LENGTH_SHORT).show();
-                    selectedRecords.clear();
-                    updateConfirmButton();
-                    refreshFragments();
-                    // 不 finish()，停留在删除页面，方便继续操作
-                });
-            } catch (Exception e) {
-                e.printStackTrace();
-                runOnUiThread(() -> Toast.makeText(this, "删除失败：" + e.getMessage(), Toast.LENGTH_LONG).show());
             }
         }).start();
     }

@@ -19,6 +19,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.EachYoungX.timer.database.LogDatabaseHelper;
+import com.EachYoungX.timer.database.DatabaseIoLock;
 import com.EachYoungX.timer.R;
 import com.EachYoungX.timer.ui.ThemeManager;
 import com.EachYoungX.timer.services.TimerService;
@@ -47,6 +48,7 @@ public class DataPrivacyActivity extends AppCompatActivity {
     private MaterialToolbar toolbar;
     private MaterialButton btnExport, btnImport, btnDelete;
     private MaterialButton btnBackups;
+    private MaterialButton btnDatabaseBackup;
     private Spinner spinnerCleanupPeriod;
     private LogDatabaseHelper dbHelper;
     private SharedPreferences prefs;
@@ -96,6 +98,7 @@ public class DataPrivacyActivity extends AppCompatActivity {
         btnExport = findViewById(R.id.btn_export);
         btnImport = findViewById(R.id.btn_import);
         btnBackups = findViewById(R.id.btn_backups);
+        btnDatabaseBackup = findViewById(R.id.btn_database_backup);
         btnDelete = findViewById(R.id.btn_delete);
         spinnerCleanupPeriod = findViewById(R.id.spinner_cleanup_period);
 
@@ -113,6 +116,8 @@ public class DataPrivacyActivity extends AppCompatActivity {
 
         // 应用自身可控的备份列表
         btnBackups.setOnClickListener(v -> showAvailableBackups());
+
+        btnDatabaseBackup.setOnClickListener(v -> showDatabaseBackupDialog());
 
         // 删除按钮
         btnDelete.setOnClickListener(v -> showDeleteDialog());
@@ -289,10 +294,199 @@ public class DataPrivacyActivity extends AppCompatActivity {
 
     private void showStatus(String message) {
         new AlertDialog.Builder(this)
-                .setTitle(message.startsWith("备份成功") ? "备份成功" : "数据操作结果")
+                .setTitle(message.startsWith("备份成功") ? "备份成功"
+                        : message.startsWith("数据库备份成功") ? "数据库备份成功" : "数据操作结果")
                 .setMessage(message)
                 .setPositiveButton("知道了", null)
                 .show();
+    }
+
+    private void showDatabaseBackupDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("导出原始数据库")
+                .setMessage("将保存 CarTimer 当前完整 SQLite 数据库，用于迁移前保险、故障恢复和开发分析。\n\n正常恢复请优先使用 CSV。此操作不会修改原始数据库。")
+                .setPositiveButton("导出", (dialog, which) -> exportRawDatabase())
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private void exportRawDatabase() {
+        new Thread(() -> {
+            String stage = "PREPARE";
+            File tempFile = null;
+            Uri publishedUri = null;
+            try {
+                synchronized (DatabaseIoLock.WRITE_LOCK) {
+                    stage = "COUNT_SOURCE";
+                    SQLiteDatabase db = dbHelper.getWritableDatabase();
+                    int sourceCount = countLogs(db);
+                    String journalMode = readJournalMode(db);
+
+                    stage = "CHECK_JOURNAL";
+                    if (journalMode.contains("wal")) {
+                        stage = "CHECKPOINT";
+                        try (Cursor cursor = db.rawQuery("PRAGMA wal_checkpoint(TRUNCATE)", null)) {
+                            if (!cursor.moveToFirst() || cursor.getInt(0) != 0) {
+                                throw new IOException("RAW_DB_WAL_CHECKPOINT_FAILED");
+                            }
+                        }
+                    }
+
+                    File sourceFile = getDatabasePath("car_timer_logs.db");
+                    if (!sourceFile.exists() || sourceFile.length() <= 0) {
+                        throw new IOException("RAW_DB_SOURCE_NOT_FOUND");
+                    }
+
+                    stage = "CLOSE_CONNECTIONS";
+                    dbHelper.close();
+                    File journalFile = new File(sourceFile.getPath() + "-journal");
+                    File walFile = new File(sourceFile.getPath() + "-wal");
+                    if ((journalFile.exists() && journalFile.length() > 0)
+                            || (walFile.exists() && walFile.length() > 0)) {
+                        throw new IOException("RAW_DB_JOURNAL_ACTIVE");
+                    }
+
+                    stage = "SNAPSHOT_COPY";
+                    File tempDir = new File(getCacheDir(), "db_export");
+                    if (!tempDir.exists() && !tempDir.mkdirs()) {
+                        throw new IOException("RAW_DB_COPY_FAILED");
+                    }
+                    String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
+                            .format(new Date());
+                    tempFile = new File(tempDir, "CarTimer_DB_" + timestamp + ".db.tmp");
+                    copyFile(sourceFile, tempFile);
+                    if (tempFile.length() != sourceFile.length()) {
+                        throw new IOException("RAW_DB_COPY_FAILED");
+                    }
+
+                    stage = "OPEN_SNAPSHOT";
+                    SQLiteDatabase snapshot = SQLiteDatabase.openDatabase(tempFile.getPath(), null,
+                            SQLiteDatabase.OPEN_READONLY);
+                    try {
+                        stage = "INTEGRITY_CHECK";
+                        String integrity = "";
+                        try (Cursor cursor = snapshot.rawQuery("PRAGMA integrity_check", null)) {
+                            if (cursor.moveToFirst()) {
+                                integrity = cursor.getString(0);
+                            }
+                        }
+                        if (!"ok".equalsIgnoreCase(integrity)) {
+                            throw new IOException("RAW_DB_VERIFY_INTEGRITY_FAILED: " + integrity);
+                        }
+
+                        stage = "COUNT_VERIFY";
+                        int backupCount = countLogs(snapshot);
+                        if (backupCount != sourceCount) {
+                            throw new IOException("RAW_DB_VERIFY_COUNT_MISMATCH: " + sourceCount + " / " + backupCount);
+                        }
+                    } finally {
+                        snapshot.close();
+                    }
+
+                    stage = "PUBLISH";
+                    String fileName = tempFile.getName().replace(".db.tmp", ".db");
+                    try {
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                            ContentValues values = new ContentValues();
+                            values.put(android.provider.MediaStore.Downloads.DISPLAY_NAME, fileName);
+                            values.put(android.provider.MediaStore.Downloads.MIME_TYPE, "application/octet-stream");
+                            values.put(android.provider.MediaStore.Downloads.RELATIVE_PATH,
+                                    Environment.DIRECTORY_DOWNLOADS + "/CarTimer/database");
+                            publishedUri = getContentResolver().insert(
+                                    android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                            if (publishedUri == null) {
+                                throw new IOException("RAW_DB_MEDIASTORE_FAILED");
+                            }
+                            try (OutputStream output = getContentResolver().openOutputStream(publishedUri);
+                                    java.io.FileInputStream input = new java.io.FileInputStream(tempFile)) {
+                                if (output == null) {
+                                    throw new IOException("RAW_DB_MEDIASTORE_FAILED");
+                                }
+                                copyStream(input, output);
+                            }
+                        } else {
+                            throw new IOException("RAW_DB_MEDIASTORE_UNAVAILABLE");
+                        }
+                    } catch (Exception mediaStoreError) {
+                        if (publishedUri != null) {
+                            getContentResolver().delete(publishedUri, null, null);
+                            publishedUri = null;
+                        }
+                        File externalDir = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
+                        if (externalDir == null) {
+                            throw new IOException("RAW_DB_FALLBACK_FAILED");
+                        }
+                        File fallbackDir = new File(externalDir, "database_backups");
+                        if (!fallbackDir.exists() && !fallbackDir.mkdirs()) {
+                            throw new IOException("RAW_DB_FALLBACK_FAILED");
+                        }
+                        File fallbackFile = new File(fallbackDir, fileName);
+                        try (java.io.FileInputStream input = new java.io.FileInputStream(tempFile);
+                                FileOutputStream output = new FileOutputStream(fallbackFile)) {
+                            copyStream(input, output);
+                        }
+                        runOnUiThread(() -> showStatus("数据库备份成功\n记录：" + sourceCount
+                                + " 条\n完整性：通过\n文件：" + fileName
+                                + "\n位置：应用专用目录/database_backups/"));
+                        return;
+                    }
+
+                    stage = "VERIFY_PUBLISHED";
+                    long publishedSize;
+                    try (android.content.res.AssetFileDescriptor descriptor =
+                                 getContentResolver().openAssetFileDescriptor(publishedUri, "r")) {
+                        publishedSize = descriptor == null ? 0 : descriptor.getLength();
+                    }
+                    if (publishedSize <= 0) {
+                        throw new IOException("RAW_DB_VERIFY_PUBLISHED_FAILED");
+                    }
+                    runOnUiThread(() -> showStatus("数据库备份成功\n记录：" + sourceCount
+                            + " 条\n数据库版本：2\n完整性：通过\n文件：" + fileName
+                            + "\n位置：Download/CarTimer/database/"));
+                }
+            } catch (Exception e) {
+                String message = "数据库备份失败\n阶段：" + stage + "\n原因："
+                        + e.getClass().getSimpleName() + " - " + String.valueOf(e.getMessage())
+                        + "\n原数据库未修改";
+                runOnUiThread(() -> showStatus(message));
+            } finally {
+                if (tempFile != null) {
+                    //noinspection ResultOfMethodCallIgnored
+                    tempFile.delete();
+                }
+            }
+        }).start();
+    }
+
+    private int countLogs(SQLiteDatabase db) {
+        try (Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM logs", null)) {
+            return cursor.moveToFirst() ? cursor.getInt(0) : 0;
+        }
+    }
+
+    private String readJournalMode(SQLiteDatabase db) throws IOException {
+        try (Cursor cursor = db.rawQuery("PRAGMA journal_mode", null)) {
+            if (cursor.moveToFirst()) {
+                return cursor.getString(0).toLowerCase(Locale.US);
+            }
+        }
+        throw new IOException("RAW_DB_JOURNAL_MODE_UNKNOWN");
+    }
+
+    private void copyFile(File source, File target) throws IOException {
+        try (java.io.FileInputStream input = new java.io.FileInputStream(source);
+                FileOutputStream output = new FileOutputStream(target)) {
+            copyStream(input, output);
+        }
+    }
+
+    private void copyStream(java.io.InputStream input, OutputStream output) throws IOException {
+        byte[] buffer = new byte[8192];
+        int read;
+        while ((read = input.read(buffer)) != -1) {
+            output.write(buffer, 0, read);
+        }
+        output.flush();
     }
 
     private void showAvailableBackups() {
@@ -446,12 +640,13 @@ public class DataPrivacyActivity extends AppCompatActivity {
      */
     private void importFromCSV(Uri uri) {
         new Thread(() -> {
-            SQLiteDatabase db = dbHelper.getWritableDatabase();
-            db.beginTransaction();
+            synchronized (DatabaseIoLock.WRITE_LOCK) {
+                SQLiteDatabase db = dbHelper.getWritableDatabase();
+                db.beginTransaction();
 
-            try {
-                BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(getContentResolver().openInputStream(uri), "UTF-8"));
+                try {
+                    BufferedReader reader = new BufferedReader(
+                            new InputStreamReader(getContentResolver().openInputStream(uri), "UTF-8"));
 
                 String line;
                 int lineNumber = 0;
@@ -514,10 +709,11 @@ public class DataPrivacyActivity extends AppCompatActivity {
                         "导入完成\n成功：" + finalImported + " 条\n跳过（重复）: " + finalSkipped + " 条",
                         Toast.LENGTH_LONG).show());
 
-            } catch (Exception e) {
-                e.printStackTrace();
-                db.endTransaction();
-                runOnUiThread(() -> Toast.makeText(this, "导入失败：" + e.getMessage(), Toast.LENGTH_LONG).show());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    db.endTransaction();
+                    runOnUiThread(() -> Toast.makeText(this, "导入失败：" + e.getMessage(), Toast.LENGTH_LONG).show());
+                }
             }
         }).start();
     }
@@ -655,9 +851,11 @@ public class DataPrivacyActivity extends AppCompatActivity {
      */
     private void deleteAllLogs() {
         new Thread(() -> {
-            SQLiteDatabase db = dbHelper.getWritableDatabase();
-            db.execSQL("DELETE FROM logs");
-            db.close();
+            synchronized (DatabaseIoLock.WRITE_LOCK) {
+                SQLiteDatabase db = dbHelper.getWritableDatabase();
+                db.execSQL("DELETE FROM logs");
+                db.close();
+            }
 
             runOnUiThread(() -> {
                 Toast.makeText(this, "已清空所有记录", Toast.LENGTH_SHORT).show();
@@ -698,10 +896,13 @@ public class DataPrivacyActivity extends AppCompatActivity {
         long thresholdMillis = System.currentTimeMillis() - ((long) period * 365 * 24 * 60 * 60 * 1000);
 
         new Thread(() -> {
-            SQLiteDatabase db = dbHelper.getWritableDatabase();
-            int deletedCount = db.delete("logs", "start_time < ?",
-                    new String[] { String.valueOf(thresholdMillis) });
-            db.close();
+            int deletedCount;
+            synchronized (DatabaseIoLock.WRITE_LOCK) {
+                SQLiteDatabase db = dbHelper.getWritableDatabase();
+                deletedCount = db.delete("logs", "start_time < ?",
+                        new String[] { String.valueOf(thresholdMillis) });
+                db.close();
+            }
 
             if (deletedCount > 0) {
                 runOnUiThread(
