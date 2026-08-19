@@ -97,7 +97,11 @@ public class HomeFragment extends Fragment {
         };
 
         IntentFilter filter = new IntentFilter(TimerService.ACTION_TIME_UPDATE);
-        requireActivity().registerReceiver(timerReceiver, filter);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            requireActivity().registerReceiver(timerReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            requireActivity().registerReceiver(timerReceiver, filter);
+        }
     }
 
     // 更新按钮状态的辅助方法

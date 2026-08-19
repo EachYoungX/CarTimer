@@ -39,7 +39,7 @@ android {
     }
 
     lint {
-        disable "UnspecifiedRegisterReceiverFlag", "UnsafeImplicitIntentLaunch"
+        disable "UnsafeImplicitIntentLaunch"
         abortOnError false  // 不因为 lint 错误而中止构建
         checkReleaseBuilds false  // release 构建时不检查 lint
     }

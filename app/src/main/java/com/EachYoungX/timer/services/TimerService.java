@@ -452,7 +452,11 @@ public class TimerService extends Service {
         };
 
         try {
-            registerReceiver(shutdownReceiver, filter);
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(shutdownReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                registerReceiver(shutdownReceiver, filter);
+            }
             Log.d(TAG, "registerShutdownReceiver: Shutdown receiver registered.");
         } catch (Exception e) {
             Log.e(TAG, "registerShutdownReceiver: Failed to register receiver", e);
