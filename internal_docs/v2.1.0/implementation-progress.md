@@ -12,6 +12,8 @@
 - `92f5081` — 加强 MediaStore 失败回退、半成品清理、文件大小验证和 CSV 字段转义。
 - `a87e865` — 暖米白低饱和主题整理，保留原有 `orange` preference key。
 - `68cd0ec` — 增加独立 BYD API Probe，使用 reflection 只读探测 OEM 接口。
+- `8a07b11` — 增加 Raw SQLite 一致性快照导出、写锁和 integrity/count 校验。
+- `1af4f6f` — 增加 Raw DB 备份状态查看入口，明确不提供自动覆盖恢复。
 
 ## 当前备份行为
 
@@ -22,6 +24,8 @@
 3. UI 显示阶段、错误类型、记录数、文件名和位置。
 4. 系统文件选择器保留为可选导出/导入路径。
 5. “查看可恢复备份”扫描公共 Download/CarTimer 和应用专用目录。
+
+Raw DB 备份单独保存到 `Download/CarTimer/database/`，MediaStore 失败时回退到应用专用 `database_backups/`；导出前执行 journal/WAL 检查，快照后执行 `PRAGMA integrity_check` 和 `logs` 行数校验。
 
 ## 尚未由车机确认的事项
 
