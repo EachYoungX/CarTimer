@@ -154,6 +154,15 @@
 
             </com.google.android.material.card.MaterialCardView>
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_backups"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:text="查看可恢复备份"
+                android:textSize="18sp"
+                style="@style/Widget.Material3.Button.OutlinedButton" />
+
             <!-- 自动清理卡片 -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"

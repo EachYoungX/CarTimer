@@ -1,11 +1,13 @@
 package com.EachYoungX.timer.activities;
 
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
+import android.os.Environment;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
@@ -25,10 +27,16 @@ import com.google.android.material.button.MaterialButton;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -37,6 +45,7 @@ public class DataPrivacyActivity extends AppCompatActivity {
 
     private MaterialToolbar toolbar;
     private MaterialButton btnExport, btnImport, btnDelete;
+    private MaterialButton btnBackups;
     private Spinner spinnerCleanupPeriod;
     private LogDatabaseHelper dbHelper;
     private SharedPreferences prefs;
@@ -51,6 +60,8 @@ public class DataPrivacyActivity extends AppCompatActivity {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                     Uri uri = result.getData().getData();
                     exportToCSV(uri);
+                } else {
+                    showStatus("导出已取消：系统文件选择器未返回目标文件");
                 }
             });
 
@@ -60,6 +71,8 @@ public class DataPrivacyActivity extends AppCompatActivity {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                     Uri uri = result.getData().getData();
                     importFromCSV(uri);
+                } else {
+                    showStatus("导入已取消：系统文件选择器未返回文件");
                 }
             });
 
@@ -81,6 +94,7 @@ public class DataPrivacyActivity extends AppCompatActivity {
         toolbar = findViewById(R.id.toolbar);
         btnExport = findViewById(R.id.btn_export);
         btnImport = findViewById(R.id.btn_import);
+        btnBackups = findViewById(R.id.btn_backups);
         btnDelete = findViewById(R.id.btn_delete);
         spinnerCleanupPeriod = findViewById(R.id.spinner_cleanup_period);
 
@@ -95,6 +109,9 @@ public class DataPrivacyActivity extends AppCompatActivity {
 
         // 导入按钮
         btnImport.setOnClickListener(v -> showImportDialog());
+
+        // 应用自身可控的备份列表
+        btnBackups.setOnClickListener(v -> showAvailableBackups());
 
         // 删除按钮
         btnDelete.setOnClickListener(v -> showDeleteDialog());
@@ -118,10 +135,176 @@ public class DataPrivacyActivity extends AppCompatActivity {
     private void showExportDialog() {
         new AlertDialog.Builder(this)
                 .setTitle("导出记录")
-                .setMessage("确定要导出所有行驶记录为 CSV 文件吗？\n\n文件格式：UTF-8 with BOM\n包含字段：日期、开始时间、结束时间、时长")
-                .setPositiveButton("导出", (dialog, which) -> openExportPicker())
+                .setMessage("备份将优先保存到 Download/CarTimer/。\n\n如果车机拒绝公共目录，应用会自动保存到应用专用备份目录。\n\n文件格式：UTF-8 with BOM")
+                .setPositiveButton("立即备份", (dialog, which) -> exportToManagedStorage())
+                .setNeutralButton("使用系统选择器", (dialog, which) -> openExportPicker())
                 .setNegativeButton("取消", null)
                 .show();
+    }
+
+    private void exportToManagedStorage() {
+        new Thread(() -> {
+            String stage = "PREPARE";
+            String fileName = "CarTimer_" + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
+                    .format(new Date()) + ".csv";
+            int count = 0;
+            Uri uri = null;
+            File fallbackFile = null;
+            try {
+                List<com.EachYoungX.timer.models.LogEntry> logs = dbHelper.getAllLogs();
+                count = logs.size();
+                String csv = buildCsv(logs);
+
+                stage = "CREATE_DESTINATION";
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    ContentValues values = new ContentValues();
+                    values.put(android.provider.MediaStore.Downloads.DISPLAY_NAME, fileName);
+                    values.put(android.provider.MediaStore.Downloads.MIME_TYPE, "text/csv");
+                    values.put(android.provider.MediaStore.Downloads.RELATIVE_PATH,
+                            Environment.DIRECTORY_DOWNLOADS + "/CarTimer");
+                    uri = getContentResolver().insert(
+                            android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                    if (uri != null) {
+                        stage = "WRITE";
+                        try (OutputStream output = getContentResolver().openOutputStream(uri)) {
+                            if (output == null) {
+                                throw new IOException("OutputStream is null");
+                            }
+                            output.write(csv.getBytes(StandardCharsets.UTF_8));
+                            output.flush();
+                        }
+                    }
+                }
+
+                if (uri == null) {
+                    stage = "CREATE_DESTINATION_FALLBACK";
+                    File backupDir = new File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "backups");
+                    if (!backupDir.exists() && !backupDir.mkdirs()) {
+                        throw new IOException("无法创建应用专用备份目录");
+                    }
+                    fallbackFile = new File(backupDir, fileName);
+                    stage = "WRITE_FALLBACK";
+                    try (FileOutputStream output = new FileOutputStream(fallbackFile)) {
+                        output.write(csv.getBytes(StandardCharsets.UTF_8));
+                        output.flush();
+                    }
+                }
+
+                stage = "VERIFY";
+                long size;
+                if (fallbackFile != null) {
+                    size = fallbackFile.length();
+                } else {
+                    try (android.content.res.AssetFileDescriptor descriptor =
+                                 getContentResolver().openAssetFileDescriptor(uri, "r")) {
+                        if (descriptor == null) {
+                            throw new IOException("无法重新访问备份文件");
+                        }
+                        size = descriptor.getLength();
+                    }
+                }
+                if (size <= 0) {
+                    throw new IOException("备份文件为空");
+                }
+
+                String location = fallbackFile != null
+                        ? "应用专用目录（可在应用内恢复）"
+                        : "Download/CarTimer/";
+                String resultFile = fallbackFile != null ? fallbackFile.getName() : fileName;
+                int finalCount = count;
+                runOnUiThread(() -> showStatus("备份成功\n" + finalCount + " 条记录\n" + resultFile + "\n位置：" + location));
+            } catch (Exception e) {
+                String message = "备份失败\n阶段：" + stage + "\n错误：" + e.getClass().getSimpleName()
+                        + " - " + String.valueOf(e.getMessage()) + "\n原始日志未发生变化";
+                runOnUiThread(() -> showStatus(message));
+            }
+        }).start();
+    }
+
+    private String buildCsv(List<com.EachYoungX.timer.models.LogEntry> logs) {
+        StringBuilder csv = new StringBuilder();
+        csv.append('\ufeff');
+        csv.append("date_key,start_time,end_time,duration,week_key,month_key\n");
+        for (com.EachYoungX.timer.models.LogEntry log : logs) {
+            csv.append(csvValue(log.getDateKey())).append(',')
+                    .append(log.getStartTime()).append(',')
+                    .append(log.getEndTime()).append(',')
+                    .append(log.getDuration()).append(',')
+                    .append(csvValue(log.getWeekKey())).append(',')
+                    .append(csvValue(log.getMonthKey())).append('\n');
+        }
+        return csv.toString();
+    }
+
+    private String csvValue(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\"", "\"\"").contains(",")
+                ? "\"" + value.replace("\"", "\"\"") + "\""
+                : value;
+    }
+
+    private void showStatus(String message) {
+        new AlertDialog.Builder(this)
+                .setTitle(message.startsWith("备份成功") ? "备份成功" : "数据操作结果")
+                .setMessage(message)
+                .setPositiveButton("知道了", null)
+                .show();
+    }
+
+    private void showAvailableBackups() {
+        new Thread(() -> {
+            ArrayList<String> names = new ArrayList<>();
+            ArrayList<Uri> uris = new ArrayList<>();
+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                String[] projection = {
+                        android.provider.MediaStore.Downloads.DISPLAY_NAME,
+                        android.provider.MediaStore.Downloads._ID
+                };
+                try (Cursor cursor = getContentResolver().query(
+                        android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                        projection,
+                        android.provider.MediaStore.Downloads.RELATIVE_PATH + "=?",
+                        new String[]{Environment.DIRECTORY_DOWNLOADS + "/CarTimer/"},
+                        android.provider.MediaStore.Downloads.DATE_MODIFIED + " DESC")) {
+                    if (cursor != null) {
+                        int nameIndex = cursor.getColumnIndexOrThrow(android.provider.MediaStore.Downloads.DISPLAY_NAME);
+                        int idIndex = cursor.getColumnIndexOrThrow(android.provider.MediaStore.Downloads._ID);
+                        while (cursor.moveToNext()) {
+                            names.add(cursor.getString(nameIndex));
+                            uris.add(Uri.withAppendedPath(
+                                    android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                                    cursor.getString(idIndex)));
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // App-specific fallback is still scanned below.
+                }
+            }
+
+            File backupDir = new File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "backups");
+            File[] files = backupDir.listFiles((dir, name) -> name.endsWith(".csv"));
+            if (files != null) {
+                for (File file : files) {
+                    names.add(file.getName() + "（应用专用目录）");
+                    uris.add(Uri.fromFile(file));
+                }
+            }
+
+            runOnUiThread(() -> {
+                if (names.isEmpty()) {
+                    showStatus("当前没有找到可恢复备份");
+                    return;
+                }
+                new AlertDialog.Builder(this)
+                        .setTitle("可恢复备份")
+                        .setItems(names.toArray(new String[0]), (dialog, which) -> importFromCSV(uris.get(which)))
+                        .setNegativeButton("取消", null)
+                        .show();
+            });
+        }).start();
     }
 
     /**
