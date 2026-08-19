@@ -49,6 +49,7 @@ public class DataPrivacyActivity extends AppCompatActivity {
     private MaterialButton btnExport, btnImport, btnDelete;
     private MaterialButton btnBackups;
     private MaterialButton btnDatabaseBackup;
+    private MaterialButton btnRawDatabaseBackups;
     private Spinner spinnerCleanupPeriod;
     private LogDatabaseHelper dbHelper;
     private SharedPreferences prefs;
@@ -99,6 +100,7 @@ public class DataPrivacyActivity extends AppCompatActivity {
         btnImport = findViewById(R.id.btn_import);
         btnBackups = findViewById(R.id.btn_backups);
         btnDatabaseBackup = findViewById(R.id.btn_database_backup);
+        btnRawDatabaseBackups = findViewById(R.id.btn_raw_database_backups);
         btnDelete = findViewById(R.id.btn_delete);
         spinnerCleanupPeriod = findViewById(R.id.spinner_cleanup_period);
 
@@ -118,6 +120,7 @@ public class DataPrivacyActivity extends AppCompatActivity {
         btnBackups.setOnClickListener(v -> showAvailableBackups());
 
         btnDatabaseBackup.setOnClickListener(v -> showDatabaseBackupDialog());
+        btnRawDatabaseBackups.setOnClickListener(v -> showRawDatabaseBackups());
 
         // 删除按钮
         btnDelete.setOnClickListener(v -> showDeleteDialog());
@@ -315,11 +318,13 @@ public class DataPrivacyActivity extends AppCompatActivity {
             String stage = "PREPARE";
             File tempFile = null;
             Uri publishedUri = null;
+            int sourceCount = 0;
+            String fileName = null;
             try {
                 synchronized (DatabaseIoLock.WRITE_LOCK) {
                     stage = "COUNT_SOURCE";
                     SQLiteDatabase db = dbHelper.getWritableDatabase();
-                    int sourceCount = countLogs(db);
+                    sourceCount = countLogs(db);
                     String journalMode = readJournalMode(db);
 
                     stage = "CHECK_JOURNAL";
@@ -383,8 +388,10 @@ public class DataPrivacyActivity extends AppCompatActivity {
                         snapshot.close();
                     }
 
-                    stage = "PUBLISH";
-                    String fileName = tempFile.getName().replace(".db.tmp", ".db");
+                }
+
+                stage = "PUBLISH";
+                fileName = tempFile.getName().replace(".db.tmp", ".db");
                     try {
                         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                             ContentValues values = new ContentValues();
@@ -425,8 +432,10 @@ public class DataPrivacyActivity extends AppCompatActivity {
                                 FileOutputStream output = new FileOutputStream(fallbackFile)) {
                             copyStream(input, output);
                         }
-                        runOnUiThread(() -> showStatus("数据库备份成功\n记录：" + sourceCount
-                                + " 条\n完整性：通过\n文件：" + fileName
+                        int finalSourceCount = sourceCount;
+                        String finalFileName = fileName;
+                        runOnUiThread(() -> showStatus("数据库备份成功\n记录：" + finalSourceCount
+                                + " 条\n完整性：通过\n文件：" + finalFileName
                                 + "\n位置：应用专用目录/database_backups/"));
                         return;
                     }
@@ -440,10 +449,11 @@ public class DataPrivacyActivity extends AppCompatActivity {
                     if (publishedSize <= 0) {
                         throw new IOException("RAW_DB_VERIFY_PUBLISHED_FAILED");
                     }
-                    runOnUiThread(() -> showStatus("数据库备份成功\n记录：" + sourceCount
-                            + " 条\n数据库版本：2\n完整性：通过\n文件：" + fileName
+                    int finalSourceCount = sourceCount;
+                    String finalFileName = fileName;
+                    runOnUiThread(() -> showStatus("数据库备份成功\n记录：" + finalSourceCount
+                            + " 条\n数据库版本：2\n完整性：通过\n文件：" + finalFileName
                             + "\n位置：Download/CarTimer/database/"));
-                }
             } catch (Exception e) {
                 String message = "数据库备份失败\n阶段：" + stage + "\n原因："
                         + e.getClass().getSimpleName() + " - " + String.valueOf(e.getMessage())
@@ -538,6 +548,54 @@ public class DataPrivacyActivity extends AppCompatActivity {
                 new AlertDialog.Builder(this)
                         .setTitle("可恢复备份")
                         .setItems(names.toArray(new String[0]), (dialog, which) -> importFromCSV(uris.get(which)))
+                        .setNegativeButton("取消", null)
+                        .show();
+            });
+        }).start();
+    }
+
+    private void showRawDatabaseBackups() {
+        new Thread(() -> {
+            ArrayList<String> names = new ArrayList<>();
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                String[] projection = {
+                        android.provider.MediaStore.Downloads.DISPLAY_NAME
+                };
+                try (Cursor cursor = getContentResolver().query(
+                        android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                        projection,
+                        android.provider.MediaStore.Downloads.RELATIVE_PATH + "=?",
+                        new String[]{Environment.DIRECTORY_DOWNLOADS + "/CarTimer/database/"},
+                        android.provider.MediaStore.Downloads.DATE_MODIFIED + " DESC")) {
+                    if (cursor != null) {
+                        int nameIndex = cursor.getColumnIndexOrThrow(android.provider.MediaStore.Downloads.DISPLAY_NAME);
+                        while (cursor.moveToNext()) {
+                            names.add(cursor.getString(nameIndex) + "\n位置：Download/CarTimer/database/");
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // App-specific fallback is still scanned below.
+                }
+            }
+
+            File externalDir = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
+            File backupDir = externalDir == null ? null : new File(externalDir, "database_backups");
+            File[] files = backupDir == null ? null : backupDir.listFiles((dir, name) -> name.endsWith(".db"));
+            if (files != null) {
+                for (File file : files) {
+                    names.add(file.getName() + "\n位置：应用专用目录/database_backups/");
+                }
+            }
+
+            runOnUiThread(() -> {
+                if (names.isEmpty()) {
+                    showStatus("当前没有找到原始数据库备份");
+                    return;
+                }
+                new AlertDialog.Builder(this)
+                        .setTitle("原始数据库备份")
+                        .setItems(names.toArray(new String[0]), null)
+                        .setMessage("Raw DB 仅用于迁移前保险、故障恢复和开发分析。v2.1.0 不提供自动覆盖恢复。")
                         .setNegativeButton("取消", null)
                         .show();
             });
