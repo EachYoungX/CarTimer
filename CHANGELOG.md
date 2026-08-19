@@ -10,6 +10,27 @@
 
 ---
 
+## [2.1.0-compat-test.1] - 2026-08-19
+
+### Compatibility
+
+- 默认 CSV 备份优先保存到 `Download/CarTimer/`，失败时回退到应用专用目录。
+- 增加应用内可恢复备份扫描和阶段化错误反馈。
+- 动态 BroadcastReceiver 使用显式兼容 flag。
+
+### Data & Backup
+
+- 数据库升级不再使用破坏性 `DROP TABLE` fallback。
+- 备份完成后校验 CSV Header 和记录数量。
+- 保留系统文件选择器作为可选导入/导出路径。
+
+### Internal Research
+
+- 增加独立 BYD API Probe，仅用于只读接口可行性验证。
+- 未宣称正式支持 BYD 里程或 trip distance。
+
+> 本构建尚未通过目标车机现场验证，不是最终 Release Gate A 通过版本。
+
 ## [2.0.0] - 2026-03-07
 
 ### 重大更新
