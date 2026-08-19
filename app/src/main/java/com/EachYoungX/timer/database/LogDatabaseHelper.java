@@ -48,8 +48,18 @@ public class LogDatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_LOGS);
-        onCreate(db);
+        // Keep migrations explicit and non-destructive. v2.1.0 does not change
+        // the production schema, so this path is only a skeleton for the next
+        // real schema version.
+        if (oldVersion < 3) {
+            migrateV2ToV3(db);
+        }
+    }
+
+    private void migrateV2ToV3(SQLiteDatabase db) {
+        // Reserved for the first real schema change. Never drop the logs table
+        // as a generic upgrade fallback: historical data must survive an
+        // upgrade even when a migration fails.
     }
 
     public void insertLog(long startTime, long endTime, long duration) {
