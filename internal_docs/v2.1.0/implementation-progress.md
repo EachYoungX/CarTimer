@@ -10,6 +10,8 @@
 - `c43b999` — 清理重复通知权限，并为动态 Receiver 使用显式兼容 flag。
 - `0a18b1a` — 默认 CSV 备份改为应用可控路径，并增加应用内备份列表入口。
 - `92f5081` — 加强 MediaStore 失败回退、半成品清理、文件大小验证和 CSV 字段转义。
+- `a87e865` — 暖米白低饱和主题整理，保留原有 `orange` preference key。
+- `68cd0ec` — 增加独立 BYD API Probe，使用 reflection 只读探测 OEM 接口。
 
 ## 当前备份行为
 
@@ -30,6 +32,8 @@
 - BYD OEM API 的普通签名权限结果。
 
 上述事项仍标记为 `UNVERIFIED`，不能作为发布通过条件的替代证据。BYD Probe 必须保持独立，不接入正式计时、数据库或 UI 业务。
+
+Probe 已可本地构建，但尚未在目标车机安装运行，因此 class、权限和 raw mileage 结果仍为 `UNVERIFIED`。
 
 ## 提交纪律
 
