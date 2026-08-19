@@ -157,14 +157,17 @@ public class DataPrivacyActivity extends AppCompatActivity {
 
                 stage = "CREATE_DESTINATION";
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                    ContentValues values = new ContentValues();
-                    values.put(android.provider.MediaStore.Downloads.DISPLAY_NAME, fileName);
-                    values.put(android.provider.MediaStore.Downloads.MIME_TYPE, "text/csv");
-                    values.put(android.provider.MediaStore.Downloads.RELATIVE_PATH,
-                            Environment.DIRECTORY_DOWNLOADS + "/CarTimer");
-                    uri = getContentResolver().insert(
-                            android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
-                    if (uri != null) {
+                    try {
+                        ContentValues values = new ContentValues();
+                        values.put(android.provider.MediaStore.Downloads.DISPLAY_NAME, fileName);
+                        values.put(android.provider.MediaStore.Downloads.MIME_TYPE, "text/csv");
+                        values.put(android.provider.MediaStore.Downloads.RELATIVE_PATH,
+                                Environment.DIRECTORY_DOWNLOADS + "/CarTimer");
+                        uri = getContentResolver().insert(
+                                android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                        if (uri == null) {
+                            throw new IOException("MediaStore insert returned null");
+                        }
                         stage = "WRITE";
                         try (OutputStream output = getContentResolver().openOutputStream(uri)) {
                             if (output == null) {
@@ -173,12 +176,21 @@ public class DataPrivacyActivity extends AppCompatActivity {
                             output.write(csv.getBytes(StandardCharsets.UTF_8));
                             output.flush();
                         }
+                    } catch (Exception mediaStoreError) {
+                        if (uri != null) {
+                            getContentResolver().delete(uri, null, null);
+                        }
+                        uri = null;
                     }
                 }
 
                 if (uri == null) {
                     stage = "CREATE_DESTINATION_FALLBACK";
-                    File backupDir = new File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "backups");
+                    File externalDir = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
+                    if (externalDir == null) {
+                        throw new IOException("应用专用存储不可用");
+                    }
+                    File backupDir = new File(externalDir, "backups");
                     if (!backupDir.exists() && !backupDir.mkdirs()) {
                         throw new IOException("无法创建应用专用备份目录");
                     }
@@ -240,9 +252,10 @@ public class DataPrivacyActivity extends AppCompatActivity {
         if (value == null) {
             return "";
         }
-        return value.replace("\"", "\"\"").contains(",")
-                ? "\"" + value.replace("\"", "\"\"") + "\""
-                : value;
+        String escaped = value.replace("\"", "\"\"");
+        return value.contains(",") || value.contains("\"") || value.contains("\n") || value.contains("\r")
+                ? "\"" + escaped + "\""
+                : escaped;
     }
 
     private void showStatus(String message) {
@@ -284,8 +297,9 @@ public class DataPrivacyActivity extends AppCompatActivity {
                 }
             }
 
-            File backupDir = new File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "backups");
-            File[] files = backupDir.listFiles((dir, name) -> name.endsWith(".csv"));
+            File externalDir = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
+            File backupDir = externalDir == null ? null : new File(externalDir, "backups");
+            File[] files = backupDir == null ? null : backupDir.listFiles((dir, name) -> name.endsWith(".csv"));
             if (files != null) {
                 for (File file : files) {
                     names.add(file.getName() + "（应用专用目录）");
