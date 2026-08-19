@@ -8,6 +8,7 @@
 - `BYDAUTO_STATISTIC_GET` 权限状态；
 - `getInstance(Context)` 是否成功；
 - `getTotalMileageValue()` 原始返回值。
+- 每 3 秒连续读取，用于观察稳定性。
 
 Probe 使用 reflection，不保存 BYD framework JAR，不调用任何车辆控制 setter，也不写数据库或修改 CarTimer 状态。
 
