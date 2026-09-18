@@ -21,6 +21,7 @@ import com.EachYoungX.timer.CarTimerApplication;
 import com.EachYoungX.timer.R;
 import com.EachYoungX.timer.activities.MainActivity;
 import com.EachYoungX.timer.database.LogDatabaseHelper;
+import com.EachYoungX.timer.utils.BackupManager;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -268,6 +269,8 @@ public class TimerService extends Service {
         try {
             LogDatabaseHelper dbHelper = new LogDatabaseHelper(this);
             dbHelper.insertLog(sTime, eTime, duration);
+            dbHelper.close();
+            BackupManager.backupLatestAsync(this, null);
             Log.i(TAG, "saveAnomalyLog: Anomaly log saved successfully. Start: " + sTime + ", End: " + eTime
                     + ", Duration: " + duration);
         } catch (Exception e) {
@@ -402,6 +405,8 @@ public class TimerService extends Service {
             try {
                 LogDatabaseHelper dbHelper = new LogDatabaseHelper(this);
                 dbHelper.insertLog(startTime, finalEndTime, finalDuration);
+                dbHelper.close();
+                BackupManager.backupLatestAsync(this, null);
             } catch (Exception e) {
                 Log.e(TAG, "stopTimer: DB Error", e);
             }

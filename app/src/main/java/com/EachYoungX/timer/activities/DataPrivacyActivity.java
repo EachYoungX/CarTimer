@@ -23,19 +23,17 @@ import com.EachYoungX.timer.database.DatabaseIoLock;
 import com.EachYoungX.timer.R;
 import com.EachYoungX.timer.ui.ThemeManager;
 import com.EachYoungX.timer.services.TimerService;
+import com.EachYoungX.timer.utils.BackupManager;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -144,7 +142,7 @@ public class DataPrivacyActivity extends AppCompatActivity {
     private void showExportDialog() {
         new AlertDialog.Builder(this)
                 .setTitle("导出记录")
-                .setMessage("备份将优先保存到 Download/CarTimer/。\n\n如果车机拒绝公共目录，应用会自动保存到应用专用备份目录。\n\n文件格式：UTF-8 with BOM")
+                .setMessage("立即备份会更新 Download/CarTimer/backup/ 下的 latest.csv 和 latest.db。\n\n该目录位于公共 Download 中，卸载应用后仍可用于恢复。\n\n文件格式：UTF-8 with BOM")
                 .setPositiveButton("立即备份", (dialog, which) -> exportToManagedStorage())
                 .setNeutralButton("使用系统选择器", (dialog, which) -> openExportPicker())
                 .setNegativeButton("取消", null)
@@ -153,90 +151,21 @@ public class DataPrivacyActivity extends AppCompatActivity {
 
     private void exportToManagedStorage() {
         new Thread(() -> {
-            String stage = "PREPARE";
-            String fileName = "CarTimer_" + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-                    .format(new Date()) + ".csv";
-            int count = 0;
-            Uri uri = null;
-            File fallbackFile = null;
             try {
-                List<com.EachYoungX.timer.models.LogEntry> logs = dbHelper.getAllLogs();
-                count = logs.size();
-                String csv = buildCsv(logs);
-
-                stage = "CREATE_DESTINATION";
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                    try {
-                        ContentValues values = new ContentValues();
-                        values.put(android.provider.MediaStore.Downloads.DISPLAY_NAME, fileName);
-                        values.put(android.provider.MediaStore.Downloads.MIME_TYPE, "text/csv");
-                        values.put(android.provider.MediaStore.Downloads.RELATIVE_PATH,
-                                Environment.DIRECTORY_DOWNLOADS + "/CarTimer");
-                        uri = getContentResolver().insert(
-                                android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
-                        if (uri == null) {
-                            throw new IOException("MediaStore insert returned null");
-                        }
-                        stage = "WRITE";
-                        try (OutputStream output = getContentResolver().openOutputStream(uri)) {
-                            if (output == null) {
-                                throw new IOException("OutputStream is null");
-                            }
-                            output.write(csv.getBytes(StandardCharsets.UTF_8));
-                            output.flush();
-                        }
-                    } catch (Exception mediaStoreError) {
-                        if (uri != null) {
-                            getContentResolver().delete(uri, null, null);
-                        }
-                        uri = null;
+                BackupManager.BackupResult result = BackupManager.backupLatest(getApplicationContext());
+                runOnUiThread(() -> {
+                    if (result.isSuccess()) {
+                        showStatus("备份成功\n" + result.recordCount + " 条记录\n"
+                                + BackupManager.CSV_FILE_NAME + "\n"
+                                + BackupManager.DB_FILE_NAME + "\n位置：Download/CarTimer/backup/");
+                    } else {
+                        showStatus("备份失败\nCSV：" + (result.csvPublished ? "成功" : "失败")
+                                + "\nDB：" + (result.dbPublished ? "成功" : "失败")
+                                + "\n原因：" + result.error + "\n原始日志未发生变化");
                     }
-                }
-
-                if (uri == null) {
-                    stage = "CREATE_DESTINATION_FALLBACK";
-                    File externalDir = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
-                    if (externalDir == null) {
-                        throw new IOException("应用专用存储不可用");
-                    }
-                    File backupDir = new File(externalDir, "backups");
-                    if (!backupDir.exists() && !backupDir.mkdirs()) {
-                        throw new IOException("无法创建应用专用备份目录");
-                    }
-                    fallbackFile = new File(backupDir, fileName);
-                    stage = "WRITE_FALLBACK";
-                    try (FileOutputStream output = new FileOutputStream(fallbackFile)) {
-                        output.write(csv.getBytes(StandardCharsets.UTF_8));
-                        output.flush();
-                    }
-                }
-
-                stage = "VERIFY";
-                long size;
-                if (fallbackFile != null) {
-                    size = fallbackFile.length();
-                } else {
-                    try (android.content.res.AssetFileDescriptor descriptor =
-                                 getContentResolver().openAssetFileDescriptor(uri, "r")) {
-                        if (descriptor == null) {
-                            throw new IOException("无法重新访问备份文件");
-                        }
-                        size = descriptor.getLength();
-                    }
-                }
-                if (size <= 0) {
-                    throw new IOException("备份文件为空");
-                }
-                verifyCsvBackup(uri, fallbackFile, count);
-
-                String location = fallbackFile != null
-                        ? "应用专用目录（可在应用内恢复）"
-                        : "Download/CarTimer/";
-                String resultFile = fallbackFile != null ? fallbackFile.getName() : fileName;
-                int finalCount = count;
-                runOnUiThread(() -> showStatus("备份成功\n" + finalCount + " 条记录\n" + resultFile + "\n位置：" + location));
+                });
             } catch (Exception e) {
-                String message = "备份失败\n阶段：" + stage + "\n错误：" + e.getClass().getSimpleName()
+                String message = "备份失败\n错误：" + e.getClass().getSimpleName()
                         + " - " + String.valueOf(e.getMessage()) + "\n原始日志未发生变化";
                 runOnUiThread(() -> showStatus(message));
             }
@@ -504,6 +433,12 @@ public class DataPrivacyActivity extends AppCompatActivity {
             ArrayList<String> names = new ArrayList<>();
             ArrayList<Uri> uris = new ArrayList<>();
 
+            BackupManager.LatestBackup latest = BackupManager.findLatestCsv(getApplicationContext());
+            if (latest != null) {
+                names.add(BackupManager.CSV_FILE_NAME + "（自动备份，" + latest.recordCount + " 条）");
+                uris.add(latest.uri != null ? latest.uri : Uri.fromFile(latest.file));
+            }
+
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                 String[] projection = {
                         android.provider.MediaStore.Downloads.DISPLAY_NAME,
@@ -595,7 +530,7 @@ public class DataPrivacyActivity extends AppCompatActivity {
                 new AlertDialog.Builder(this)
                         .setTitle("原始数据库备份")
                         .setItems(names.toArray(new String[0]), null)
-                        .setMessage("Raw DB 仅用于迁移前保险、故障恢复和开发分析。v2.1.0 不提供自动覆盖恢复。")
+                        .setMessage("Raw DB 仅用于迁移前保险、故障恢复和开发分析。v2.1.1 不提供自动覆盖恢复。")
                         .setNegativeButton("取消", null)
                         .show();
             });
@@ -624,42 +559,16 @@ public class DataPrivacyActivity extends AppCompatActivity {
     private void exportToCSV(Uri uri) {
         new Thread(() -> {
             try {
-                PrintWriter writer = new PrintWriter(new BufferedWriter(
-                        new OutputStreamWriter(getContentResolver().openOutputStream(uri), "UTF-8")));
-
-                // 写入 BOM
-                writer.write('\ufeff');
-
-                // 写入表头
-                writer.println("date_key,start_time,end_time,duration,week_key,month_key");
-
-                // 查询所有记录
-                SQLiteDatabase db = dbHelper.getReadableDatabase();
-                Cursor cursor = db.rawQuery(
-                        "SELECT date_key, start_time, end_time, duration, week_key, month_key FROM logs ORDER BY start_time",
-                        null);
-
-                int count = 0;
-                if (cursor.moveToFirst()) {
-                    do {
-                        String dateKey = cursor.getString(0);
-                        long startTime = cursor.getLong(1);
-                        long endTime = cursor.getLong(2);
-                        long duration = cursor.getLong(3);
-                        String weekKey = cursor.getString(4);
-                        String monthKey = cursor.getString(5);
-
-                        writer.println(dateKey + "," + startTime + "," + endTime + "," +
-                                duration + "," + weekKey + "," + monthKey);
-                        count++;
-                    } while (cursor.moveToNext());
+                List<com.EachYoungX.timer.models.LogEntry> logs = dbHelper.getAllLogs();
+                try (OutputStream output = getContentResolver().openOutputStream(uri)) {
+                    if (output == null) {
+                        throw new IOException("无法打开导出目标");
+                    }
+                    output.write(buildCsv(logs).getBytes(StandardCharsets.UTF_8));
+                    output.flush();
                 }
 
-                cursor.close();
-                db.close();
-                writer.close();
-
-                int finalCount = count;
+                int finalCount = logs.size();
                 runOnUiThread(() -> Toast.makeText(this, "成功导出 " + finalCount + " 条记录", Toast.LENGTH_LONG).show());
 
             } catch (IOException e) {
@@ -698,80 +607,15 @@ public class DataPrivacyActivity extends AppCompatActivity {
      */
     private void importFromCSV(Uri uri) {
         new Thread(() -> {
-            synchronized (DatabaseIoLock.WRITE_LOCK) {
-                SQLiteDatabase db = dbHelper.getWritableDatabase();
-                db.beginTransaction();
-
-                try {
-                    BufferedReader reader = new BufferedReader(
-                            new InputStreamReader(getContentResolver().openInputStream(uri), "UTF-8"));
-
-                String line;
-                int lineNumber = 0;
-                int importedCount = 0;
-                int skippedCount = 0;
-
-                while ((line = reader.readLine()) != null) {
-                    lineNumber++;
-
-                    // 跳过表头
-                    if (lineNumber == 1 && line.contains("date_key")) {
-                        continue;
-                    }
-
-                    // 解析 CSV 行
-                    String[] parts = line.split(",");
-                    if (parts.length < 6) {
-                        continue;
-                    }
-
-                    try {
-                        String dateKey = parts[0].trim();
-                        long startTime = Long.parseLong(parts[1].trim());
-                        long endTime = Long.parseLong(parts[2].trim());
-                        long duration = Long.parseLong(parts[3].trim());
-                        String weekKey = parts[4].trim();
-                        String monthKey = parts[5].trim();
-
-                        // 检查是否已存在（根据 start_time 去重）
-                        Cursor cursor = db.rawQuery(
-                                "SELECT COUNT(*) FROM logs WHERE start_time = ?",
-                                new String[] { String.valueOf(startTime) });
-
-                        if (cursor.moveToFirst() && cursor.getInt(0) == 0) {
-                            // 不存在，插入新记录
-                            db.execSQL(
-                                    "INSERT INTO logs (date_key, start_time, end_time, duration, week_key, month_key) VALUES (?, ?, ?, ?, ?, ?)",
-                                    new Object[] { dateKey, startTime, endTime, duration, weekKey, monthKey });
-                            importedCount++;
-                        } else {
-                            // 已存在，跳过
-                            skippedCount++;
-                        }
-                        cursor.close();
-
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        // 跳过无效行
-                    }
-                }
-
-                reader.close();
-                db.setTransactionSuccessful();
-                db.endTransaction();
-                db.close();
-
-                int finalImported = importedCount;
-                int finalSkipped = skippedCount;
+            try {
+                BackupManager.RestoreResult result = BackupManager.restoreCsv(getApplicationContext(), uri);
                 runOnUiThread(() -> Toast.makeText(this,
-                        "导入完成\n成功：" + finalImported + " 条\n跳过（重复）: " + finalSkipped + " 条",
+                        "导入完成\n成功：" + result.importedCount + " 条\n跳过（重复）："
+                                + result.skippedCount + " 条",
                         Toast.LENGTH_LONG).show());
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    db.endTransaction();
-                    runOnUiThread(() -> Toast.makeText(this, "导入失败：" + e.getMessage(), Toast.LENGTH_LONG).show());
-                }
+            } catch (Exception e) {
+                runOnUiThread(() -> Toast.makeText(this,
+                        "导入失败：" + String.valueOf(e.getMessage()), Toast.LENGTH_LONG).show());
             }
         }).start();
     }

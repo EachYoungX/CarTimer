@@ -1,8 +1,10 @@
 package com.EachYoungX.timer.activities;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
@@ -16,7 +18,9 @@ import com.EachYoungX.timer.R;
 import com.EachYoungX.timer.fragments.StatisticsFragment;
 import com.EachYoungX.timer.ui.ThemeManager;
 import com.EachYoungX.timer.services.TimerService;
+import com.EachYoungX.timer.utils.BackupManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import androidx.appcompat.app.AlertDialog;
 
 /**
  * 主页面 Activity
@@ -30,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
 
     // 记录是否已经注册了客户端，避免重复注册
     private boolean clientRegistered = false;
+    private boolean recoveryCheckStarted = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,9 +57,9 @@ public class MainActivity extends AppCompatActivity {
                     .commit();
         }
 
-        // 检查并自动启动计时器
+        // 首次启动先检查卸载重装后留下的公共备份，再决定是否自动启动计时器
         if (savedInstanceState == null) {
-            checkAndAutoStartTimer();
+            ensureStoragePermissionThenCheckRecovery();
         }
         
         // 首次启动时注册客户端
@@ -172,6 +177,89 @@ public class MainActivity extends AppCompatActivity {
                 startService(serviceIntent);
             }
         }
+    }
+
+    private void checkForRecoveryBackup() {
+        if (recoveryCheckStarted) {
+            return;
+        }
+        recoveryCheckStarted = true;
+        new Thread(() -> {
+            BackupManager.LatestBackup backup = null;
+            try {
+                int localCount = BackupManager.countLocalLogs(getApplicationContext());
+                backup = localCount == 0 ? BackupManager.findLatestCsv(getApplicationContext()) : null;
+            } catch (Exception e) {
+                Log.w("MainActivity", "Recovery check skipped", e);
+            }
+            BackupManager.LatestBackup discoveredBackup = backup;
+            runOnUiThread(() -> {
+                if (discoveredBackup == null) {
+                    checkAndAutoStartTimer();
+                    return;
+                }
+                showRecoveryPrompt(discoveredBackup);
+            });
+        }, "CarTimer-RecoveryCheck").start();
+    }
+
+    private void ensureStoragePermissionThenCheckRecovery() {
+        if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.P
+                && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 2101);
+            return;
+        }
+        checkForRecoveryBackup();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == 2101) {
+            checkForRecoveryBackup();
+        }
+    }
+
+    private void showRecoveryPrompt(BackupManager.LatestBackup backup) {
+        String message = "发现已有 CarTimer 数据备份\n\n"
+                + "当前数据：0 条\n"
+                + "发现备份：" + backup.recordCount + " 条\n"
+                + "恢复后：预计 " + backup.recordCount + " 条\n\n"
+                + "备份时间：" + BackupManager.formatModifiedTime(backup.modifiedAt) + "\n"
+                + "来源：Download/CarTimer/backup/\n\n"
+                + "是否恢复？";
+        new AlertDialog.Builder(this)
+                .setTitle("发现已有数据备份")
+                .setMessage(message)
+                .setPositiveButton("恢复数据", (dialog, which) -> restoreBackup(backup))
+                .setNegativeButton("稍后处理", (dialog, which) -> checkAndAutoStartTimer())
+                .setOnCancelListener(dialog -> checkAndAutoStartTimer())
+                .show();
+    }
+
+    private void restoreBackup(BackupManager.LatestBackup backup) {
+        new Thread(() -> {
+            try {
+                BackupManager.RestoreResult result = BackupManager.restoreCsv(getApplicationContext(), backup);
+                runOnUiThread(() -> {
+                    new AlertDialog.Builder(this)
+                            .setTitle("恢复成功")
+                            .setMessage("已恢复 " + result.importedCount + " 条记录。\n"
+                                    + (result.skippedCount > 0 ? "跳过重复记录 " + result.skippedCount + " 条。" : ""))
+                            .setPositiveButton("知道了", (dialog, which) -> checkAndAutoStartTimer())
+                            .show();
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    new AlertDialog.Builder(this)
+                            .setTitle("恢复失败")
+                            .setMessage("备份未写入数据库。\n原因：" + String.valueOf(e.getMessage()))
+                            .setPositiveButton("知道了", (dialog, which) -> checkAndAutoStartTimer())
+                            .show();
+                });
+            }
+        }, "CarTimer-Restore").start();
     }
 
     private BottomNavigationView.OnNavigationItemSelectedListener navListener = new BottomNavigationView.OnNavigationItemSelectedListener() {
